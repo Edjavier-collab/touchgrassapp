@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/woop_provider.dart';
+import '../../core/providers/timer_provider.dart';
 import 'woop_list_page.dart';
 import 'woop_form_page.dart';
+import 'timer_page.dart';
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
@@ -16,6 +18,13 @@ class HomePage extends ConsumerWidget {
         title: const Text('TouchGrass'),
         backgroundColor: theme.colorScheme.inversePrimary,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.timer),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (context) => const TimerPage()),
+            ),
+            tooltip: 'Focus Timer',
+          ),
           IconButton(
             icon: const Icon(Icons.list),
             onPressed: () => Navigator.of(context).push(
@@ -115,6 +124,23 @@ class HomePage extends ConsumerWidget {
                       child: Center(child: CircularProgressIndicator()),
                     ),
                   ),
+                  error: (error, stack) => const SizedBox.shrink(),
+                );
+              },
+            ),
+            
+            const SizedBox(height: 24),
+            
+            // Active Timer Section
+            Consumer(
+              builder: (context, ref, child) {
+                final timerAsync = ref.watch(timerProvider);
+                
+                return timerAsync.when(
+                  data: (session) => session != null 
+                      ? _buildActiveTimerCard(context, session)
+                      : _buildStartTimerCard(context),
+                  loading: () => const SizedBox.shrink(),
                   error: (error, stack) => const SizedBox.shrink(),
                 );
               },
@@ -367,6 +393,129 @@ class HomePage extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildActiveTimerCard(BuildContext context, dynamic session) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.timer,
+                  color: Colors.green,
+                  size: 24,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Active Timer',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green,
+                  ),
+                ),
+                const Spacer(),
+                TextButton(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => const TimerPage()),
+                  ),
+                  child: const Text('View Timer'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              session.name,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            LinearProgressIndicator(
+              value: session.progressPercentage,
+              backgroundColor: Colors.grey[300],
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  session.formattedElapsed,
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontFamily: 'monospace',
+                  ),
+                ),
+                Text(
+                  session.formattedRemaining,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'monospace',
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStartTimerCard(BuildContext context) {
+    return Card(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (context) => const TimerPage()),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.timer,
+                  color: Colors.blue,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Start Focus Timer',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Track your focused work sessions',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.arrow_forward_ios),
+            ],
+          ),
+        ),
       ),
     );
   }
