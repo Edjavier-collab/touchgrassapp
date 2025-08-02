@@ -34,102 +34,94 @@ class HomePage extends ConsumerWidget {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Welcome Header
-            Card(
-              elevation: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  children: [
-                    const Icon(
-                      Icons.grass,
-                      size: 48,
-                      color: Color(0xFF4CAF50),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Welcome to TouchGrass!',
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Compact Welcome Header
+              Card(
+                elevation: 1,
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.grass,
+                        size: 32,
+                        color: Color(0xFF4CAF50),
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Your 24-hour craving support companion',
-                      style: theme.textTheme.bodyLarge,
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Welcome to TouchGrass!',
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              'Your 24-hour craving support companion',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
             
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
             
-            // WOOP Stats Overview
+            // Compact Stats Row
             Consumer(
               builder: (context, ref, child) {
                 final statsAsync = ref.watch(woopStatsProvider);
                 
                 return statsAsync.when(
-                  data: (stats) => Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Your WOOP Progress',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
-                            children: [
-                              _buildStatColumn(
-                                'Total WOOPs',
-                                stats['total']!,
-                                Icons.psychology,
-                                theme.colorScheme.primary,
-                              ),
-                              _buildStatColumn(
-                                'Active',
-                                stats['pending']!,
-                                Icons.pending_actions,
-                                Colors.orange,
-                              ),
-                              _buildStatColumn(
-                                'Completed',
-                                stats['completed']!,
-                                Icons.check_circle,
-                                Colors.green,
-                              ),
-                            ],
-                          ),
-                        ],
+                  data: (stats) => Row(
+                    children: [
+                      Expanded(
+                        child: _buildCompactStatCard(
+                          'WOOPs',
+                          stats['total']!,
+                          Icons.psychology,
+                          theme.colorScheme.primary,
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _buildCompactStatCard(
+                          'Active',
+                          stats['pending']!,
+                          Icons.pending_actions,
+                          Colors.orange,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _buildCompactStatCard(
+                          'Done',
+                          stats['completed']!,
+                          Icons.check_circle,
+                          Colors.green,
+                        ),
+                      ),
+                    ],
                   ),
-                  loading: () => const Card(
-                    child: Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: Center(child: CircularProgressIndicator()),
-                    ),
-                  ),
+                  loading: () => const SizedBox(height: 60),
                   error: (error, stack) => const SizedBox.shrink(),
                 );
               },
             ),
             
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
             
             // Active Timer Section
             Consumer(
@@ -146,163 +138,58 @@ class HomePage extends ConsumerWidget {
               },
             ),
             
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
             
-            // Quick Actions
-            Text(
-              'Quick Actions',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            
-            const SizedBox(height: 16),
-            
-            // Create WOOP Button
-            Card(
-              child: InkWell(
-                borderRadius: BorderRadius.circular(12),
-                onTap: () => _createNewWoop(context),
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          Icons.add_circle,
-                          color: theme.colorScheme.primary,
-                          size: 32,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Create New WOOP',
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Set a new goal using the WOOP method',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Icon(Icons.arrow_forward_ios),
-                    ],
+            // Compact Quick Actions Grid
+            Row(
+              children: [
+                Expanded(
+                  child: _buildQuickActionCard(
+                    context,
+                    'New WOOP',
+                    Icons.add_circle,
+                    theme.colorScheme.primary,
+                    () => _createNewWoop(context),
                   ),
                 ),
-              ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildQuickActionCard(
+                    context,
+                    'View WOOPs',
+                    Icons.list,
+                    Colors.blue,
+                    () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (context) => const WoopListPage()),
+                    ),
+                  ),
+                ),
+              ],
             ),
             
             const SizedBox(height: 12),
             
-            // View All WOOPs Button
-            Card(
-              child: InkWell(
-                borderRadius: BorderRadius.circular(12),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => const WoopListPage()),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(
-                          Icons.list,
-                          color: Colors.blue,
-                          size: 32,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'View All WOOPs',
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Manage and review your goals',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Icon(Icons.arrow_forward_ios),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            
-            const SizedBox(height: 24),
-            
-            // WOOP Explanation
+            // Compact WOOP Explanation
             Card(
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(12.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'What is WOOP?',
-                      style: theme.textTheme.titleMedium?.copyWith(
+                      'WOOP Method',
+                      style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    _buildWoopExplanationItem(
-                      'W',
-                      'Wish',
-                      'Your goal or aspiration',
-                      Icons.star,
-                      Colors.amber,
-                    ),
-                    _buildWoopExplanationItem(
-                      'O',
-                      'Outcome',
-                      'The positive feeling you\'ll experience',
-                      Icons.emoji_emotions,
-                      Colors.green,
-                    ),
-                    _buildWoopExplanationItem(
-                      'O',
-                      'Obstacle',
-                      'The main barrier you might face',
-                      Icons.warning,
-                      Colors.orange,
-                    ),
-                    _buildWoopExplanationItem(
-                      'P',
-                      'Plan',
-                      'Your if-then strategy to overcome obstacles',
-                      Icons.lightbulb,
-                      Colors.blue,
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        _buildCompactWoopItem('W', 'Wish', Colors.amber),
+                        _buildCompactWoopItem('O', 'Outcome', Colors.green),
+                        _buildCompactWoopItem('O', 'Obstacle', Colors.orange),
+                        _buildCompactWoopItem('P', 'Plan', Colors.blue),
+                      ],
                     ),
                   ],
                 ),
@@ -314,29 +201,97 @@ class HomePage extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatColumn(String label, int value, IconData icon, Color color) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: color, size: 28),
-        const SizedBox(height: 8),
-        Text(
-          value.toString(),
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: color,
+  Widget _buildCompactStatCard(String label, int value, IconData icon, Color color) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 20),
+            const SizedBox(height: 4),
+            Text(
+              value.toString(),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 10,
+                color: Colors.grey,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickActionCard(BuildContext context, String title, IconData icon, Color color, VoidCallback onTap) {
+    return Card(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: color, size: 24),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
         ),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            color: Colors.grey,
+      ),
+    );
+  }
+
+  Widget _buildCompactWoopItem(String letter, String title, Color color) {
+    return Expanded(
+      child: Column(
+        children: [
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Center(
+              child: Text(
+                letter,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                  color: color,
+                ),
+              ),
+            ),
           ),
-          textAlign: TextAlign.center,
-        ),
-      ],
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 
@@ -399,70 +354,52 @@ class HomePage extends ConsumerWidget {
 
   Widget _buildActiveTimerCard(BuildContext context, dynamic session) {
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.timer,
-                  color: Colors.green,
-                  size: 24,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Active Timer',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green,
-                  ),
-                ),
-                const Spacer(),
-                TextButton(
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (context) => const TimerPage()),
-                  ),
-                  child: const Text('View Timer'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              session.name,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (context) => const TimerPage()),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.timer,
+                color: Colors.green,
+                size: 20,
               ),
-            ),
-            const SizedBox(height: 8),
-            LinearProgressIndicator(
-              value: session.progressPercentage,
-              backgroundColor: Colors.grey[300],
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  session.formattedElapsed,
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontFamily: 'monospace',
-                  ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      session.name,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    LinearProgressIndicator(
+                      value: session.progressPercentage,
+                      backgroundColor: Colors.grey[300],
+                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.green),
+                    ),
+                  ],
                 ),
-                Text(
-                  session.formattedRemaining,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'monospace',
-                  ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                session.formattedRemaining,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                  fontFamily: 'monospace',
                 ),
-              ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -476,43 +413,24 @@ class HomePage extends ConsumerWidget {
           MaterialPageRoute(builder: (context) => const TimerPage()),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(12.0),
           child: Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.timer,
-                  color: Colors.blue,
-                  size: 32,
-                ),
+              const Icon(
+                Icons.timer,
+                color: Colors.blue,
+                size: 20,
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Start Focus Timer',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Track your focused work sessions',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  'Start Focus Timer',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
-              const Icon(Icons.arrow_forward_ios),
+              const Icon(Icons.arrow_forward_ios, size: 16),
             ],
           ),
         ),
