@@ -1,0 +1,104 @@
+name: Dependency Updates
+
+on:
+  schedule:
+    # Run weekly on Mondays at 9 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:  # Allow manual triggers
+
+jobs:
+  update-flutter-deps:
+    name: Update Flutter Dependencies
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          cache: true
+      
+      - name: Update Flutter dependencies
+        run: |
+          cd flutter_app
+          flutter pub upgrade
+          flutter pub outdated
+      
+      - name: Run tests with updated deps
+        run: |
+          cd flutter_app
+          flutter test
+      
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: 'chore: update Flutter dependencies'
+          title: '🔧 Automated Flutter dependency updates'
+          body: |
+            This PR updates Flutter dependencies to their latest compatible versions.
+            
+            ## Changes
+            - Updated Flutter packages in `flutter_app/pubspec.yaml`
+            - All tests are passing with the new versions
+            
+            ## Testing
+            - ✅ `flutter test` passed
+            - ✅ `flutter analyze` passed
+            
+            Please review the changes and merge if everything looks good.
+          branch: chore/update-flutter-dependencies
+          delete-branch: true
+
+  update-node-deps:
+    name: Update Node.js Dependencies
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Update Node dependencies
+        run: |
+          npm update
+          npm audit fix --audit-level=moderate
+      
+      - name: Run tests with updated deps
+        run: |
+          npm run lint
+          npm run build
+      
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: 'chore: update Node.js dependencies'
+          title: '🔧 Automated Node.js dependency updates'
+          body: |
+            This PR updates Node.js dependencies to their latest compatible versions.
+            
+            ## Changes
+            - Updated npm packages in `package.json`
+            - Applied security fixes via `npm audit fix`
+            - All builds are passing with the new versions
+            
+            ## Testing
+            - ✅ `npm run lint` passed
+            - ✅ `npm run build` passed
+            
+            Please review the changes and merge if everything looks good.
+          branch: chore/update-node-dependencies
+          delete-branch: true

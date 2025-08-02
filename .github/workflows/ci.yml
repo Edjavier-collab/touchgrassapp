@@ -1,0 +1,198 @@
+name: TouchGrass CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  # Flutter Web App Testing
+  flutter-test:
+    name: Flutter Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: flutter_app
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          cache: true
+      
+      - name: Install dependencies
+        run: flutter pub get
+      
+      - name: Verify formatting
+        run: dart format --output=none --set-exit-if-changed .
+      
+      - name: Analyze project source
+        run: flutter analyze
+      
+      - name: Run widget tests
+        run: flutter test --coverage
+      
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: flutter_app/coverage/lcov.info
+          flags: flutter
+          name: flutter-coverage
+
+  # Next.js App Testing  
+  nextjs-test:
+    name: Next.js Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run ESLint
+        run: npm run lint
+      
+      - name: Build Next.js app
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+
+  # Flutter Web Build & Deploy
+  flutter-build:
+    name: Flutter Web Build
+    runs-on: ubuntu-latest
+    needs: [flutter-test]
+    if: github.ref == 'refs/heads/main'
+    defaults:
+      run:
+        working-directory: flutter_app
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          cache: true
+      
+      - name: Install dependencies
+        run: flutter pub get
+      
+      - name: Build for web
+        run: flutter build web --release --dart-define=SUPABASE_URL="${{ secrets.SUPABASE_URL }}" --dart-define=SUPABASE_ANON_KEY="${{ secrets.SUPABASE_ANON_KEY }}"
+      
+      - name: Archive build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: flutter-web-build
+          path: flutter_app/build/web/
+          retention-days: 7
+
+  # Security & Quality Checks
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: [flutter-test, nextjs-test]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run Snyk security scan
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+
+  # Database Migration Check
+  supabase-check:
+    name: Supabase Migration Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      
+      - name: Validate migration files
+        run: |
+          if [ -f "supabase/migrations/001_initial_schema.sql" ]; then
+            echo "✅ Migration file found"
+            # Basic SQL syntax check
+            grep -q "CREATE TABLE" supabase/migrations/001_initial_schema.sql && echo "✅ Contains table definitions"
+            grep -q "CREATE POLICY" supabase/migrations/001_initial_schema.sql && echo "✅ Contains RLS policies"
+          else
+            echo "❌ Migration file not found"
+            exit 1
+          fi
+
+  # Deploy to Cloudflare Pages (Production)
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [flutter-build, security-scan, supabase-check]
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: flutter-web-build
+          path: flutter_app/build/web/
+      
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: touchgrass-app
+          directory: flutter_app/build/web
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+  # Post-deployment health check
+  health-check:
+    name: Health Check
+    runs-on: ubuntu-latest
+    needs: [deploy-production]
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Check deployment health
+        run: |
+          sleep 30  # Wait for deployment to propagate
+          curl -f https://touchgrass-app.pages.dev || exit 1
+          echo "✅ Deployment health check passed"
